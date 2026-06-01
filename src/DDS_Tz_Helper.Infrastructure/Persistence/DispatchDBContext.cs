@@ -281,26 +281,43 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
             [typeof(transaction_data_archive)] = "transaction_data_archive",
         };
 
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        foreach (var tableName in tableNames)
         {
-            var clrType = entityType.ClrType;
-
-            if (tableNames.TryGetValue(clrType, out var tableName))
+            var clrType = tableName.Key;
+            var entityBuilder = modelBuilder.Entity(clrType).ToTable(tableName.Value);
+            foreach (var property in clrType.GetProperties().Where(p => !IsScalarProperty(p.PropertyType)))
             {
-                modelBuilder.Entity(clrType).ToTable(tableName);
+                entityBuilder.Ignore(property.Name);
             }
 
             var keyProperty = clrType.GetProperties()
+                .Where(p => IsScalarProperty(p.PropertyType))
                 .FirstOrDefault(p => p.Name == "Id" || p.Name == "id" || p.Name == clrType.Name + "Id" || p.Name == clrType.Name + "ID");
 
             if (keyProperty is null)
             {
-                modelBuilder.Entity(clrType).HasNoKey();
+                entityBuilder.HasNoKey();
             }
             else
             {
-                modelBuilder.Entity(clrType).HasKey(keyProperty.Name);
+                entityBuilder.HasKey(keyProperty.Name);
             }
         }
     }
+
+    private static bool IsScalarProperty(Type type)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
+        return type.IsPrimitive
+            || type.IsEnum
+            || type == typeof(string)
+            || type == typeof(decimal)
+            || type == typeof(DateTime)
+            || type == typeof(DateTimeOffset)
+            || type == typeof(TimeSpan)
+            || type == typeof(Guid)
+            || type == typeof(byte[]);
+    }
 }
+
