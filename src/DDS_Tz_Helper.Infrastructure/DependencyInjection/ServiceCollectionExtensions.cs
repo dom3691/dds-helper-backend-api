@@ -17,8 +17,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDispatchDBContext>(provider => provider.GetRequiredService<DispatchDBContext>());
         services.AddScoped<IATCSwapService, ATCSwapService>();
         services.AddScoped<IATCGradeService, ATCGradeService>();
+        services.AddScoped<IReceiverService, ReceiverService>();
+        services.AddScoped<ITripMaintenanceService, TripMaintenanceService>();
+        services.AddScoped<IPostingErrorsService, PostingErrorsService>();
+        services.AddScoped<IATCDetailsService, ATCDetailsService>();
 
         return services;
     }
 }
+
+
+
 
