@@ -21,10 +21,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITripMaintenanceService, TripMaintenanceService>();
         services.AddScoped<IPostingErrorsService, PostingErrorsService>();
         services.AddScoped<IATCDetailsService, ATCDetailsService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }
 }
+
 
 
 

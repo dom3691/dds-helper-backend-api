@@ -103,7 +103,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
     public virtual DbSet<trip_registry> trip_registry { get; set; }
     public virtual DbSet<trip_sync> trip_sync { get; set; }
     public virtual DbSet<truck> trucks { get; set; }
-    public virtual DbSet<user> users { get; set; }
+    public virtual DbSet<user> user { get; set; }
     public virtual DbSet<user_modification> user_modification { get; set; }
     public virtual DbSet<user_request> user_request { get; set; }
     public virtual DbSet<vbbe> vbbes { get; set; }
@@ -241,7 +241,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
             [typeof(trip_registry)] = "trip_registry",
             [typeof(trip_sync)] = "trip_sync",
             [typeof(truck)] = "trucks",
-            [typeof(user)] = "users",
+            [typeof(user)] = "user",
             [typeof(user_modification)] = "user_modification",
             [typeof(user_request)] = "user_request",
             [typeof(vbbe)] = "vbbes",

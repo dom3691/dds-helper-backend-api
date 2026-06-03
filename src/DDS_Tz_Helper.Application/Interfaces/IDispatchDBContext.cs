@@ -14,11 +14,13 @@ public interface IDispatchDBContext
     DbSet<gateaccess_info> gateaccess_info { get; set; }
     DbSet<sto_data> sto_data { get; set; }
     DbSet<sto_transaction_data> sto_transaction_data { get; set; }
+    DbSet<system_setting> system_setting { get; set; }
     DbSet<Trade> Trades { get; set; }
     DbSet<transaction_data> transaction_data { get; set; }
     DbSet<transaction_data_archive> transaction_data_archive { get; set; }
     DbSet<transaction_log> transaction_log { get; set; }
     DbSet<trip_registry> trip_registry { get; set; }
+    DbSet<user> user { get; set; }
     DbSet<weight_change> weight_change { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
