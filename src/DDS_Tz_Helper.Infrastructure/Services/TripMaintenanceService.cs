@@ -1,4 +1,4 @@
-﻿using DDS_Tz_Helper.Application.DTOs.BusinessObjects;
+using DDS_Tz_Helper.Application.DTOs.BusinessObjects;
 using DDS_Tz_Helper.Application.DTOs.TripMaintenance;
 using DDS_Tz_Helper.Application.Interfaces;
 using DDS_Tz_Helper.Domain.Entities;
@@ -9,10 +9,12 @@ namespace DDS_Tz_Helper.Infrastructure.Services;
 public class TripMaintenanceService : ITripMaintenanceService
 {
     private readonly IDispatchDBContext _context;
+    private readonly ITransactionLogService _transactionLogService;
 
-    public TripMaintenanceService(IDispatchDBContext context)
+    public TripMaintenanceService(IDispatchDBContext context, ITransactionLogService transactionLogService)
     {
         _context = context;
+        _transactionLogService = transactionLogService;
     }
 
     public async Task<object> DoUpdateDriverAsync(DoUpdateDriverRequest request, CancellationToken cancellationToken = default)
@@ -46,7 +48,7 @@ public class TripMaintenanceService : ITripMaintenanceService
                     atcDetails.drivers_name = request.driver;
                 }
 
-                await RecordLogAsync(request.atc, request.user_id, "UPDATE_DRIVER_HELPER", "UPDATE_DRIVER_HELPER : ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DRIVER_HELPER", "UPDATE_DRIVER_HELPER : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 tradeResponse.msg = "Driver Updated Successfully";
@@ -57,7 +59,7 @@ public class TripMaintenanceService : ITripMaintenanceService
             if (transDataDetails != null)
             {
                 transDataDetails.driver = request.driver;
-                await RecordLogAsync(request.atc, request.user_id, "UPDATE_DRIVER_HELPER", "UPDATE_DRIVER_HELPER : ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DRIVER_HELPER", "UPDATE_DRIVER_HELPER : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 transactionResponse.msg = "Driver Updated Successfully";
@@ -93,7 +95,7 @@ public class TripMaintenanceService : ITripMaintenanceService
                 tradeDetails.sparestr2 = request.destination;
                 tradeDetails.receiver = request.destination;
                 tradeDetails.receivercode = request.destination;
-                await RecordLogAsync(request.atc, request.user_id, "UPDATE_DESTINATION_HELPER", "UPDATE_DESTINATION_HELPER: ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DESTINATION_HELPER", "UPDATE_DESTINATION_HELPER: ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 tradeResponse.msg = "Destination Updated Successfully";
@@ -104,7 +106,7 @@ public class TripMaintenanceService : ITripMaintenanceService
             if (transDataDetails != null)
             {
                 transDataDetails.destination = request.destination;
-                await RecordLogAsync(request.atc, request.user_id, "UPDATE_DESTINATION_HELPER", "UPDATE_DESTINATION_HELPER: ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DESTINATION_HELPER", "UPDATE_DESTINATION_HELPER: ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 transactionResponse.msg = "Destination Updated Successfully";
@@ -143,7 +145,7 @@ public class TripMaintenanceService : ITripMaintenanceService
 
             tripRegistryDetails.tms_status = "APPROVED";
             tripRegistryDetails.tms_online_status = "APPROVED";
-            await RecordLogAsync(request.trip, request.user_id, "UPDATE_TRIP_HELPER", "UPDATE_TRIP_HELPER : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.trip, request.user_id, "UPDATE_TRIP_HELPER", "UPDATE_TRIP_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             response.msg = "TRIP VALIDATED";
@@ -175,7 +177,7 @@ public class TripMaintenanceService : ITripMaintenanceService
 
             tripRegistryDetails.tms_online_status = "APPROVED";
             tripRegistryDetails.trip_id_sap = request.trip;
-            await RecordLogAsync(request.atc, request.user_id, "UPDATE_ONLINE_TRIP_HELPER", "UPDATE_ONLINE_TRIP_HELPER: ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_ONLINE_TRIP_HELPER", "UPDATE_ONLINE_TRIP_HELPER: ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             response.msg = "ONLINE TRIP ID ADDED";
@@ -190,27 +192,5 @@ public class TripMaintenanceService : ITripMaintenanceService
         }
     }
 
-    private async Task RecordLogAsync(string atc, int userId, string activity, string fieldName, CancellationToken cancellationToken)
-    {
-        var currentSession = await _context.atc_session
-            .OrderByDescending(a => a.session_start)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var transactionLog = new transaction_log
-        {
-            atc = atc,
-            activity = activity,
-            field_name = fieldName,
-            field_value = DateTime.Now.ToString(),
-            trx_date = DateTime.Now,
-            user_id = userId
-        };
-
-        if (currentSession?.status == "open")
-        {
-            transactionLog.session_id = currentSession.Id;
-        }
-
-        _context.transaction_log.Add(transactionLog);
-    }
 }
+

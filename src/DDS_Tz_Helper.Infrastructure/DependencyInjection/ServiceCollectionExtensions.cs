@@ -1,4 +1,5 @@
-﻿using DDS_Tz_Helper.Application.Interfaces;
+using DDS_Tz_Helper.Application.Interfaces;
+using DDS_Tz_Helper.Infrastructure.Common;
 using DDS_Tz_Helper.Infrastructure.Persistence;
 using DDS_Tz_Helper.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ public static class ServiceCollectionExtensions
             options.UseSqlServer(configuration.GetConnectionString("DispatchDBEntities")));
 
         services.AddScoped<IDispatchDBContext>(provider => provider.GetRequiredService<DispatchDBContext>());
+        services.AddScoped<ITransactionLogService, TransactionLogService>();
         services.AddScoped<IATCSwapService, ATCSwapService>();
         services.AddScoped<IATCGradeService, ATCGradeService>();
         services.AddScoped<IReceiverService, ReceiverService>();
@@ -26,8 +28,3 @@ public static class ServiceCollectionExtensions
         return services;
     }
 }
-
-
-
-
-

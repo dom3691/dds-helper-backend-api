@@ -9,10 +9,12 @@ namespace DDS_Tz_Helper.Infrastructure.Services;
 public class PostingErrorsService : IPostingErrorsService
 {
     private readonly IDispatchDBContext _context;
+    private readonly ITransactionLogService _transactionLogService;
 
-    public PostingErrorsService(IDispatchDBContext context)
+    public PostingErrorsService(IDispatchDBContext context, ITransactionLogService transactionLogService)
     {
         _context = context;
+        _transactionLogService = transactionLogService;
     }
 
     public async Task<trip_registry_dto> DoUpdateOfflineTripTForRepushAsync(AtcPostingErrorRequest request, CancellationToken cancellationToken = default)
@@ -30,7 +32,7 @@ public class PostingErrorsService : IPostingErrorsService
             }
 
             offlineTrip.error_field = "Repush";
-            await RecordLogAsync(request.atc, request.user_id, "UPDATE_OFFLINE_TRIP_for_REPUSH_HELPER", "UPDATE_OFFLINE_TRIP_for_REPUSH_HELPER : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_OFFLINE_TRIP_for_REPUSH_HELPER", "UPDATE_OFFLINE_TRIP_for_REPUSH_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             response.msg = "REPUSH ATC FROM POSTING-ERRORS PAGE";
@@ -96,7 +98,7 @@ public class PostingErrorsService : IPostingErrorsService
             };
 
             _context.transaction_data_archive.Add(archive);
-            await RecordLogAsync(request.atc, request.user_id, "REMOVE_CTES_TRIP_HELPER", "REMOVE_CTES_TRIP_HELPER: ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "REMOVE_CTES_TRIP_HELPER", "REMOVE_CTES_TRIP_HELPER: ", cancellationToken);
 
             offlineTrip.error_field = "Repush";
             offlineTrip.trip_id = "0000000000";
@@ -112,26 +114,5 @@ public class PostingErrorsService : IPostingErrorsService
             response.status = false;
             return response;
         }
-    }
-
-    private async Task RecordLogAsync(string atc, int userId, string activity, string fieldName, CancellationToken cancellationToken)
-    {
-        var currentSession = await _context.atc_session.OrderByDescending(a => a.session_start).FirstOrDefaultAsync(cancellationToken);
-        var transactionLog = new transaction_log
-        {
-            atc = atc,
-            activity = activity,
-            field_name = fieldName,
-            field_value = DateTime.Now.ToString(),
-            trx_date = DateTime.Now,
-            user_id = userId
-        };
-
-        if (currentSession?.status == "open")
-        {
-            transactionLog.session_id = currentSession.Id;
-        }
-
-        _context.transaction_log.Add(transactionLog);
     }
 }

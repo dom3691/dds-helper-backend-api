@@ -1,4 +1,4 @@
-﻿using DDS_Tz_Helper.Application.DTOs.ATCDetails;
+using DDS_Tz_Helper.Application.DTOs.ATCDetails;
 using DDS_Tz_Helper.Application.DTOs.BusinessObjects;
 using DDS_Tz_Helper.Application.Interfaces;
 using DDS_Tz_Helper.Domain.Entities;
@@ -9,10 +9,12 @@ namespace DDS_Tz_Helper.Infrastructure.Services;
 public class ATCDetailsService : IATCDetailsService
 {
     private readonly IDispatchDBContext _context;
+    private readonly ITransactionLogService _transactionLogService;
 
-    public ATCDetailsService(IDispatchDBContext context)
+    public ATCDetailsService(IDispatchDBContext context, ITransactionLogService transactionLogService)
     {
         _context = context;
+        _transactionLogService = transactionLogService;
     }
 
     public async Task<sto_datax> DoFetchATCDetailsAsync(FetchATCDetailsRequest request, CancellationToken cancellationToken = default)
@@ -22,7 +24,7 @@ public class ATCDetailsService : IATCDetailsService
         try
         {
             var poDetails = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.sync_status == false, cancellationToken);
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
 
             if (poDetails == null)
             {
@@ -48,7 +50,7 @@ public class ATCDetailsService : IATCDetailsService
         }
         catch (Exception ex)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             response.msg = "Error occured somewhere";
             response.status = false;
@@ -64,7 +66,7 @@ public class ATCDetailsService : IATCDetailsService
         try
         {
             var atcDetails = await _context.gateaccess_info.FirstOrDefaultAsync(x => x.atc_no == request.atc && x.status != "Weigh-Out Successful." && x.status != "CANCELLED", cancellationToken);
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE : ", cancellationToken);
 
             if (atcDetails == null)
             {
@@ -93,7 +95,7 @@ public class ATCDetailsService : IATCDetailsService
         }
         catch (Exception ex)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE: ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE: ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             response.msg = "Error occured somewhere";
             response.status = false;
@@ -108,7 +110,7 @@ public class ATCDetailsService : IATCDetailsService
         var tradeDetails = await _context.Trades.FirstOrDefaultAsync(a => a.sparenum2.ToString() == trimmedATC && a.seconddatetime == null, cancellationToken);
         if (tradeDetails != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return new trade_dto { msg = "", status = true, statusPicking = false, atc = tradeDetails.sparenum2.ToString(), trip_ID = "0000000000" };
         }
@@ -116,7 +118,7 @@ public class ATCDetailsService : IATCDetailsService
         var stoOut = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.gross == null && x.sales_type == "PO_OUT", cancellationToken);
         if (stoOut != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return new Sto_Transaction_Datax { msg = "", status = true, atc = stoOut.po_doc_number, trip_id = stoOut.trip_id };
         }
@@ -124,13 +126,13 @@ public class ATCDetailsService : IATCDetailsService
         var stoIn = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.tare == null && x.sales_type == "PO_IN", cancellationToken);
         if (stoIn != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return new Sto_Transaction_Datax { msg = "", status = true, atc = stoIn.po_doc_number, trip_id = stoIn.trip_id };
         }
 
         var atcDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.gross == null, cancellationToken);
-        await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
         if (atcDetails == null)
@@ -147,7 +149,7 @@ public class ATCDetailsService : IATCDetailsService
         var tradeDetails = await _context.Trades.FirstOrDefaultAsync(a => a.sparenum2.ToString() == trimmedATC && a.seconddatetime == null, cancellationToken);
         if (tradeDetails != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return new trade_dto
             {
@@ -164,7 +166,7 @@ public class ATCDetailsService : IATCDetailsService
         var stoOut = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.gross == null && x.sales_type == "PO_OUT", cancellationToken);
         if (stoOut != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return new Sto_Transaction_Datax
             {
@@ -181,7 +183,7 @@ public class ATCDetailsService : IATCDetailsService
         var stoIn = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.tare == null && x.sales_type == "PO_IN", cancellationToken);
         if (stoIn != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return new Sto_Transaction_Datax
             {
@@ -196,7 +198,7 @@ public class ATCDetailsService : IATCDetailsService
         }
 
         var atcDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.gross == null, cancellationToken);
-        await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
         if (atcDetails == null)
@@ -240,7 +242,7 @@ public class ATCDetailsService : IATCDetailsService
             response.atc = request.atc;
             response.del_qty = stoDataQty.del_qty ?? 0;
             response.Quantity = stoDataQty.del_qty ?? 0;
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_QTY_UPDATE_HELPER", "FETCH ATC ATTEMPT FOR QTY UPDATE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_QTY_UPDATE_HELPER", "FETCH ATC ATTEMPT FOR QTY UPDATE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
 
@@ -254,7 +256,7 @@ public class ATCDetailsService : IATCDetailsService
         var pending = await _context.transaction_data_archive.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.operator_weighin == "ADDITIONAL GROSS WEIGHT MODIF REQUEST", cancellationToken);
         if (pending != null)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR GROSS_CHANGE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR GROSS_CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             response.status = false;
             response.msg = "Theres A Pending Request For Gross WT Change For This Same ATC!!!";
@@ -266,7 +268,7 @@ public class ATCDetailsService : IATCDetailsService
             var transDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.sync_status == false && x.operator_picking != null && x.gross == null, cancellationToken);
             if (transDetails == null)
             {
-                await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR GROSS_CHANGE : ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR GROSS_CHANGE : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
                 response.status = false;
                 response.msg = "Wrong ATC Or ATC Is Weighed Out Or ATC Is Pushed To SAP Already";
@@ -276,7 +278,7 @@ public class ATCDetailsService : IATCDetailsService
             var weightChange = await _context.weight_change.FirstOrDefaultAsync(x => x.atc_no == request.atc && x.change_request_id != null && x.status == "APPROVED" && x.net_weight != null && (x.weight_change1 == "-150" || x.weight_change1 == "150"), cancellationToken);
             if (weightChange == null)
             {
-                await RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
                 response.status = false;
                 response.msg = "MAXIMUM Gross Weight Change Needs To Be Requested And Approved From DDS First";
@@ -286,14 +288,14 @@ public class ATCDetailsService : IATCDetailsService
             var changeRequest = await _context.change_request.FirstOrDefaultAsync(x => x.id == weightChange.change_request_id && x.request_type == "GROSS_WEIGHT_CHANGE" && x.date_of_approval != null && x.approved == true, cancellationToken);
             if (changeRequest == null)
             {
-                await RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
+                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
                 response.msg = "Please Ensure Initial DDS Approval Request Was Granted";
                 response.status = false;
                 return response;
             }
 
-            await RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             response.msg = "";
@@ -321,7 +323,7 @@ public class ATCDetailsService : IATCDetailsService
         }
         catch (Exception ex)
         {
-            await RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             response.msg = "Error (an exception) occured somewhere";
             response.status = false;
@@ -330,24 +332,5 @@ public class ATCDetailsService : IATCDetailsService
         }
     }
 
-    private async Task RecordLogAsync(string atc, int userId, string activity, string fieldName, CancellationToken cancellationToken)
-    {
-        var currentSession = await _context.atc_session.OrderByDescending(a => a.session_start).FirstOrDefaultAsync(cancellationToken);
-        var transactionLog = new transaction_log
-        {
-            atc = atc,
-            activity = activity,
-            field_name = fieldName,
-            field_value = DateTime.Now.ToString(),
-            trx_date = DateTime.Now,
-            user_id = userId
-        };
-
-        if (currentSession?.status == "open")
-        {
-            transactionLog.session_id = currentSession.Id;
-        }
-
-        _context.transaction_log.Add(transactionLog);
-    }
 }
+

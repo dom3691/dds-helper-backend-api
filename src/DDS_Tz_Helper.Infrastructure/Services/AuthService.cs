@@ -12,11 +12,13 @@ public class AuthService : IAuthService
 {
     private readonly IDispatchDBContext _context;
     private readonly IConfiguration _configuration;
+    private readonly ITransactionLogService _transactionLogService;
 
-    public AuthService(IDispatchDBContext context, IConfiguration configuration)
+    public AuthService(IDispatchDBContext context, IConfiguration configuration, ITransactionLogService transactionLogService)
     {
         _context = context;
         _configuration = configuration;
+        _transactionLogService = transactionLogService;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -45,7 +47,7 @@ public class AuthService : IAuthService
             }
 
             currentUser.last_login = DateTime.Now;
-            await RecordLogAsync("N/A", currentUser.Id, "LOGIN_HELPER", "Login_HELPER : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync("N/A", currentUser.Id, "LOGIN_HELPER", "Login_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             response.msg = "";
@@ -76,7 +78,7 @@ public class AuthService : IAuthService
     {
         if (request?.user_id > 0)
         {
-            await RecordLogAsync("N/A", request.user_id, "LOGOUT_HELPER", "LOGOUT_HELPER: ", cancellationToken);
+            await _transactionLogService.RecordLogAsync("N/A", request.user_id, "LOGOUT_HELPER", "LOGOUT_HELPER: ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
 
@@ -102,27 +104,5 @@ public class AuthService : IAuthService
     {
         var plant = await _context.system_setting.FirstOrDefaultAsync(x => x.switch_over == "auto", cancellationToken);
         return plant?.plant_code == "2000" ? "GBOKO" : "OTHERS";
-    }
-
-    private async Task RecordLogAsync(string atc, int userId, string activity, string fieldName, CancellationToken cancellationToken)
-    {
-        var currentSession = await _context.atc_session.OrderByDescending(a => a.session_start).FirstOrDefaultAsync(cancellationToken);
-       
-        var transactionLog = new transaction_log
-        {
-            atc = atc,
-            activity = activity,
-            field_name = fieldName,
-            field_value = DateTime.Now.ToString(),
-            trx_date = DateTime.Now,
-            user_id = userId
-        };
-
-        if (currentSession?.status == "open")
-        {
-            transactionLog.session_id = currentSession.Id;
-        }
-
-        _context.transaction_log.Add(transactionLog);
     }
 }

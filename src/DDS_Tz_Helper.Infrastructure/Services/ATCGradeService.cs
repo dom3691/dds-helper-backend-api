@@ -10,10 +10,12 @@ public class ATCGradeService : IATCGradeService
 {
     private const string GradeChangeActivity = "ATC_GRADE_CHANGE_HELPER";
     private readonly IDispatchDBContext _context;
+    private readonly ITransactionLogService _transactionLogService;
 
-    public ATCGradeService(IDispatchDBContext context)
+    public ATCGradeService(IDispatchDBContext context, ITransactionLogService transactionLogService)
     {
         _context = context;
+        _transactionLogService = transactionLogService;
     }
 
     public async Task<atc_datax> DoChangeATCGradeAsync(DoChangeATCGradeRequest request, CancellationToken cancellationToken = default)
@@ -50,7 +52,7 @@ public class ATCGradeService : IATCGradeService
             }
 
             atcDetails.sales_order_item = request.grade;
-            await RecordLogAsync(request.atc, request.user_id, GradeChangeActivity, "ATC_GRADE_CHANGE : ", cancellationToken);
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, GradeChangeActivity, "ATC_GRADE_CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             response.msg = "ATC Updated Successfully";
@@ -64,29 +66,5 @@ public class ATCGradeService : IATCGradeService
             response.excptn = ex.ToString();
             return response;
         }
-    }
-
-    private async Task RecordLogAsync(string atc, int userId, string activity, string fieldName, CancellationToken cancellationToken)
-    {
-        var currentSession = await _context.atc_session
-            .OrderByDescending(a => a.session_start)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var transactionLog = new transaction_log
-        {
-            atc = atc,
-            activity = activity,
-            field_name = fieldName,
-            field_value = DateTime.Now.ToString(),
-            trx_date = DateTime.Now,
-            user_id = userId
-        };
-
-        if (currentSession?.status == "open")
-        {
-            transactionLog.session_id = currentSession.Id;
-        }
-
-        _context.transaction_log.Add(transactionLog);
     }
 }
