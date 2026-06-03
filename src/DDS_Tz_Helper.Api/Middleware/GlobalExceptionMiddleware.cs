@@ -33,7 +33,7 @@ public class GlobalExceptionMiddleware
         var statusCode = GetStatusCode(exception);
         var title = GetTitle(statusCode);
 
-        _logger.LogError(exception, "Unhandled API exception. TraceId: {TraceId}", context.TraceIdentifier);
+        _logger.LogError(exception, "Unhandled API exception while processing {Method} {Path}", context.Request.Method, context.Request.Path);
 
         context.Response.Clear();
         context.Response.StatusCode = statusCode;

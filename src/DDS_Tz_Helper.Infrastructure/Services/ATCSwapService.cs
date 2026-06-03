@@ -83,9 +83,7 @@ public class ATCSwapService : IATCSwapService
 
     private async Task RecordLogAsync(string atc, int userId, string activity, string fieldName, CancellationToken cancellationToken)
     {
-        var currentSession = await _context.atc_session
-            .OrderByDescending(a => a.session_start)
-            .FirstOrDefaultAsync(cancellationToken);
+        var currentSession = await _context.atc_session.OrderByDescending(a => a.session_start).FirstOrDefaultAsync(cancellationToken);
 
         var transactionLog = new transaction_log
         {
