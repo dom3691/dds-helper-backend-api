@@ -51,11 +51,14 @@ public class ATCGradeService : IATCGradeService
                 return response;
             }
 
-            atcDetails.sales_order_item = request.grade;
+            var pending = ApprovalService.CreatePendingRequest(ApprovalService.ChangeGradeRequest, request.atc, request.user_id);
+            pending.sales_order_item = request.grade;
+
+            _context.transaction_data_archive.Add(pending);
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, GradeChangeActivity, "ATC_GRADE_CHANGE : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "ATC Updated Successfully";
+            response.msg = "ATC grade change request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }

@@ -31,11 +31,13 @@ public class PostingErrorsService : IPostingErrorsService
                 return response;
             }
 
-            offlineTrip.error_field = "Repush";
+            var pending = ApprovalService.CreatePendingRequest(ApprovalService.RepushOfflineRequest, request.atc, request.user_id);
+
+            _context.transaction_data_archive.Add(pending);
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_OFFLINE_TRIP_for_REPUSH_HELPER", "UPDATE_OFFLINE_TRIP_for_REPUSH_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "REPUSH ATC FROM POSTING-ERRORS PAGE";
+            response.msg = "Offline repush request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }
@@ -61,10 +63,13 @@ public class PostingErrorsService : IPostingErrorsService
                 return response;
             }
 
-            molassesDelivery.sales_order_item = molassesDelivery.sales_order_item == "FORTIFIED SUGAR" ? "MOLASSES" : "FORTIFIED SUGAR";
+            var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateMolassesRequest, request.atc, request.user_id);
+            pending.seal = molassesDelivery.sales_order_item == "FORTIFIED SUGAR" ? "MOLASSES" : "FORTIFIED SUGAR";
+
+            _context.transaction_data_archive.Add(pending);
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "PRODUCT NAME CHANGED";
+            response.msg = "Molasses update request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }
@@ -90,21 +95,16 @@ public class PostingErrorsService : IPostingErrorsService
                 return response;
             }
 
-            var archive = new transaction_data_archive
-            {
-                trip_id = offlineTrip.trip_id,
-                sales_doc_number = offlineTrip.sales_doc_number,
-                message_field = "archived after changing trip via DDS HELPER"
-            };
+            var archive = ApprovalService.CreatePendingRequest(ApprovalService.RemoveCtesTripRequest, request.atc, request.user_id);
+            archive.trip_id = offlineTrip.trip_id;
+            archive.message_field = "archived after changing trip via DDS HELPER";
 
             _context.transaction_data_archive.Add(archive);
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "REMOVE_CTES_TRIP_HELPER", "REMOVE_CTES_TRIP_HELPER: ", cancellationToken);
 
-            offlineTrip.error_field = "Repush";
-            offlineTrip.trip_id = "0000000000";
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "REPUSH ATC FROM POSTING-ERRORS PAGE";
+            response.msg = "CTES trip removal request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }

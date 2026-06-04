@@ -3,11 +3,14 @@ using DDS_Tz_Helper.Application.DTOs.TripMaintenance;
 using DDS_Tz_Helper.Application.Interfaces;
 using DDS_Tz_Helper.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace DDS_Tz_Helper.Infrastructure.Services;
 
 public class TripMaintenanceService : ITripMaintenanceService
 {
+    private static readonly Regex NamePattern = new("^[A-Za-z ]+$", RegexOptions.Compiled);
+
     private readonly IDispatchDBContext _context;
     private readonly ITransactionLogService _transactionLogService;
 
@@ -40,29 +43,28 @@ public class TripMaintenanceService : ITripMaintenanceService
         {
             if (tradeDetails != null)
             {
-                tradeDetails.sparestr1 = request.driver;
-                tradeDetails.sparestr5 = request.driver;
+                var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateDriverRequest, request.atc, request.user_id);
+                pending.driver = request.driver;
 
-                if (atcDetails != null)
-                {
-                    atcDetails.drivers_name = request.driver;
-                }
-
+                _context.transaction_data_archive.Add(pending);
                 await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DRIVER_HELPER", "UPDATE_DRIVER_HELPER : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                tradeResponse.msg = "Driver Updated Successfully";
+                tradeResponse.msg = "Driver update request submitted successfully; approval is pending.";
                 tradeResponse.status = true;
                 return tradeResponse;
             }
 
             if (transDataDetails != null)
             {
-                transDataDetails.driver = request.driver;
+                var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateDriverRequest, request.atc, request.user_id);
+                pending.driver = request.driver;
+
+                _context.transaction_data_archive.Add(pending);
                 await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DRIVER_HELPER", "UPDATE_DRIVER_HELPER : ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                transactionResponse.msg = "Driver Updated Successfully";
+                transactionResponse.msg = "Driver update request submitted successfully; approval is pending.";
                 transactionResponse.status = true;
                 return transactionResponse;
             }
@@ -92,24 +94,28 @@ public class TripMaintenanceService : ITripMaintenanceService
         {
             if (tradeDetails != null)
             {
-                tradeDetails.sparestr2 = request.destination;
-                tradeDetails.receiver = request.destination;
-                tradeDetails.receivercode = request.destination;
+                var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateDestinationRequest, request.atc, request.user_id);
+                pending.destination = request.destination;
+
+                _context.transaction_data_archive.Add(pending);
                 await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DESTINATION_HELPER", "UPDATE_DESTINATION_HELPER: ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                tradeResponse.msg = "Destination Updated Successfully";
+                tradeResponse.msg = "Destination update request submitted successfully; approval is pending.";
                 tradeResponse.status = true;
                 return tradeResponse;
             }
 
             if (transDataDetails != null)
             {
-                transDataDetails.destination = request.destination;
+                var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateDestinationRequest, request.atc, request.user_id);
+                pending.destination = request.destination;
+
+                _context.transaction_data_archive.Add(pending);
                 await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_DESTINATION_HELPER", "UPDATE_DESTINATION_HELPER: ", cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                transactionResponse.msg = "Destination Updated Successfully";
+                transactionResponse.msg = "Destination update request submitted successfully; approval is pending.";
                 transactionResponse.status = true;
                 return transactionResponse;
             }
@@ -143,12 +149,13 @@ public class TripMaintenanceService : ITripMaintenanceService
                 return response;
             }
 
-            tripRegistryDetails.tms_status = "APPROVED";
-            tripRegistryDetails.tms_online_status = "APPROVED";
+            var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateTripRequest, request.trip, request.user_id);
+
+            _context.transaction_data_archive.Add(pending);
             await _transactionLogService.RecordLogAsync(request.trip, request.user_id, "UPDATE_TRIP_HELPER", "UPDATE_TRIP_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "TRIP VALIDATED";
+            response.msg = "Trip validation request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }
@@ -175,12 +182,14 @@ public class TripMaintenanceService : ITripMaintenanceService
                 return response;
             }
 
-            tripRegistryDetails.tms_online_status = "APPROVED";
-            tripRegistryDetails.trip_id_sap = request.trip;
+            var pending = ApprovalService.CreatePendingRequest(ApprovalService.AddOnlineTripRequest, request.atc, request.user_id);
+            pending.trip_id = request.trip;
+
+            _context.transaction_data_archive.Add(pending);
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_ONLINE_TRIP_HELPER", "UPDATE_ONLINE_TRIP_HELPER: ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "ONLINE TRIP ID ADDED";
+            response.msg = "Online trip request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }
@@ -190,6 +199,57 @@ public class TripMaintenanceService : ITripMaintenanceService
             response.status = false;
             return response;
         }
+    }
+
+    public async Task<trip_registry_dto> AddDriverManuallyAsync(AddDriverManuallyRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = new trip_registry_dto();
+
+        if (request is null || request.driver_no is null || string.IsNullOrWhiteSpace(request.first_name) || string.IsNullOrWhiteSpace(request.last_name))
+        {
+            response.msg = "Driver number, first name, and last name are required.";
+            response.status = false;
+            return response;
+        }
+
+        if (request.driver_no <= 0)
+        {
+            response.msg = "Driver number must be a valid integer.";
+            response.status = false;
+            return response;
+        }
+
+        var firstName = request.first_name.Trim();
+        var lastName = request.last_name.Trim();
+        if (!NamePattern.IsMatch(firstName) || !NamePattern.IsMatch(lastName))
+        {
+            response.msg = "First name and last name must contain letters only. Special characters and numbers are not allowed.";
+            response.status = false;
+            return response;
+        }
+
+        var driverNo = request.driver_no.Value.ToString();
+        var exists = await _context.driver.AnyAsync(x => x.driver_no == driverNo, cancellationToken);
+        if (exists)
+        {
+            response.msg = "Driver number already exists.";
+            response.status = false;
+            return response;
+        }
+
+        var pending = ApprovalService.CreatePendingRequest(ApprovalService.AddDriverManuallyRequest, driverNo, request.user_id);
+        pending.driver = firstName;
+        pending.transporter = lastName;
+        pending.loc = request.plant?.Trim();
+        pending.code_a = request.third_party.ToString().ToLowerInvariant();
+
+        _context.transaction_data_archive.Add(pending);
+        await _transactionLogService.RecordLogAsync(driverNo, request.user_id, "ADD_DRIVER_MANUALLY_REQUEST_HELPER", $"{firstName} {lastName}", cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        response.msg = "Driver add request submitted successfully; approval is pending.";
+        response.status = true;
+        return response;
     }
 
 }

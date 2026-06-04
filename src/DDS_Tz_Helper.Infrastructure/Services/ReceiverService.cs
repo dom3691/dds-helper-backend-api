@@ -71,11 +71,14 @@ public class ReceiverService : IReceiverService
                 return response;
             }
 
-            atcDetails.customer_name = request.receiver;
+            var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateReceiverRequest, request.atc, request.user_id);
+            pending.sender = request.receiver;
+
+            _context.transaction_data_archive.Add(pending);
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, UpdateReceiverActivity, "UPDATE_RECEIVER_HELPER: ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            response.msg = "Receiver/Customer Updated Successfully";
+            response.msg = "Receiver/customer update request submitted successfully; approval is pending.";
             response.status = true;
             return response;
         }

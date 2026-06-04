@@ -44,7 +44,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
     public virtual DbSet<device> devices { get; set; }
     public virtual DbSet<DocNumber> DocNumbers { get; set; }
     public virtual DbSet<DocType> DocTypes { get; set; }
-    public virtual DbSet<driver> drivers { get; set; }
+    public virtual DbSet<driver> driver { get; set; }
     public virtual DbSet<eATC> eATCs { get; set; }
     public virtual DbSet<email> emails { get; set; }
     public virtual DbSet<equipment_detail> equipment_detail { get; set; }
@@ -182,7 +182,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
             [typeof(device)] = "devices",
             [typeof(DocNumber)] = "DocNumbers",
             [typeof(DocType)] = "DocTypes",
-            [typeof(driver)] = "drivers",
+            [typeof(driver)] = "driver",
             [typeof(eATC)] = "eATCs",
             [typeof(email)] = "emails",
             [typeof(equipment_detail)] = "equipment_detail",

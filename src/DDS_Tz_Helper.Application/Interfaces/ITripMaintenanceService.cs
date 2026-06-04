@@ -9,4 +9,5 @@ public interface ITripMaintenanceService
     Task<object> DoUpdateDestinationAsync(DoUpdateDestinationRequest request, CancellationToken cancellationToken = default);
     Task<trip_registry_dto> DoUpdateTripAsync(DoUpdateTripRequest request, CancellationToken cancellationToken = default);
     Task<trip_registry_dto> AddOnlineTripAsync(AddOnlineTripRequest request, CancellationToken cancellationToken = default);
+    Task<trip_registry_dto> AddDriverManuallyAsync(AddDriverManuallyRequest request, CancellationToken cancellationToken = default);
 }

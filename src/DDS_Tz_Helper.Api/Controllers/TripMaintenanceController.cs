@@ -42,4 +42,11 @@ public class TripMaintenanceController : ControllerBase
         var response = await _tripMaintenanceService.AddOnlineTripAsync(request, cancellationToken);
         return Ok(response);
     }
+
+    [HttpPost("AddDriverManually")]
+    public async Task<IActionResult> AddDriverManually([FromBody] AddDriverManuallyRequest request, CancellationToken cancellationToken)
+    {
+        var response = await _tripMaintenanceService.AddDriverManuallyAsync(request, cancellationToken);
+        return Ok(response);
+    }
 }

@@ -9,8 +9,6 @@ namespace DDS_Tz_Helper.Infrastructure.Services;
 public class ATCSwapService : IATCSwapService
 {
     private const string BagsSalesType = "BAGS";
-    private const string PendingStatus = "PENDING";
-    private const string SwapRequestOperator = "ATC SWAP REQUEST";
     private const string SwapRequestActivity = "ATC_SWAP_REQUEST_HELPER";
 
     private readonly IDispatchDBContext _context;
@@ -54,12 +52,12 @@ public class ATCSwapService : IATCSwapService
         }
 
         var trxDetails = await transactionQuery.FirstOrDefaultAsync(cancellationToken);
-        if (trxDetails is null)
-        {
-            response.status = false;
-            response.msg = "Wrong ATC or ATC is already weighed-out";
-            return response;
-        }
+        //if (trxDetails is null)
+        //{
+        //    response.status = false;
+        //    response.msg = "Wrong ATC or ATC is already weighed-out";
+        //    return response;
+        //}
 
         var archive = new transaction_data_archive
         {
@@ -67,10 +65,10 @@ public class ATCSwapService : IATCSwapService
             trip_id = request.trip_id,
             vehicle = request.atc,
             shp_point = request.user_id.ToString(),
-            operator_weighin = SwapRequestOperator,
+            operator_weighin = ApprovalService.AtcSwapRequest,
             sales_type = BagsSalesType,
             tare_time = DateTime.Now,
-            sales_doc_type = PendingStatus,
+            sales_doc_type = ApprovalService.PendingStatus,
             seal = request.reason
         };
 

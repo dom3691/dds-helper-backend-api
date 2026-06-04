@@ -11,6 +11,7 @@ public interface IDispatchDBContext
     DbSet<atc_data> atc_data { get; set; }
     DbSet<atc_session> atc_session { get; set; }
     DbSet<change_request> change_request { get; set; }
+    DbSet<driver> driver { get; set; }
     DbSet<gateaccess_info> gateaccess_info { get; set; }
     DbSet<sto_data> sto_data { get; set; }
     DbSet<sto_transaction_data> sto_transaction_data { get; set; }

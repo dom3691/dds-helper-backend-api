@@ -17,6 +17,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IDispatchDBContext>(provider => provider.GetRequiredService<DispatchDBContext>());
         services.AddScoped<ITransactionLogService, TransactionLogService>();
+        services.AddScoped<IActivityService, ActivityService>();
+        services.AddScoped<IApprovalService, ApprovalService>();
         services.AddScoped<IATCSwapService, ATCSwapService>();
         services.AddScoped<IATCGradeService, ATCGradeService>();
         services.AddScoped<IReceiverService, ReceiverService>();
