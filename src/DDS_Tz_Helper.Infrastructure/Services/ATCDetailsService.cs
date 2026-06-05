@@ -107,7 +107,7 @@ public class ATCDetailsService : IATCDetailsService
     public async Task<object> DoFetchATcForArchiveDetailsAsync(FetchATCDetailsRequest request, CancellationToken cancellationToken = default)
     {
         var trimmedATC = request.atc?.TrimStart('0') ?? string.Empty;
-        var tradeDetails = await _context.Trades.FirstOrDefaultAsync(a => a.sparenum2.ToString() == trimmedATC && a.seconddatetime == null, cancellationToken);
+        var tradeDetails = await _context.Trade.FirstOrDefaultAsync(a => a.sparenum2.ToString() == trimmedATC && a.seconddatetime == null, cancellationToken);
         if (tradeDetails != null)
         {
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_ARCHIVE_HELPER", "FETCH ATC ATTEMPT FOR ARCHIVE : ", cancellationToken);
@@ -146,7 +146,7 @@ public class ATCDetailsService : IATCDetailsService
     public async Task<object> DoFetchATcForTareChangeDetailsAsync(FetchATCDetailsRequest request, CancellationToken cancellationToken = default)
     {
         var trimmedATC = request.atc?.TrimStart('0') ?? string.Empty;
-        var tradeDetails = await _context.Trades.FirstOrDefaultAsync(a => a.sparenum2.ToString() == trimmedATC && a.seconddatetime == null, cancellationToken);
+        var tradeDetails = await _context.Trade.FirstOrDefaultAsync(a => a.sparenum2.ToString() == trimmedATC && a.seconddatetime == null, cancellationToken);
         if (tradeDetails != null)
         {
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_TARE_CHANGE_HELPER", "FETCH ATC ATTEMPT FOR TARE CHANGE : ", cancellationToken);

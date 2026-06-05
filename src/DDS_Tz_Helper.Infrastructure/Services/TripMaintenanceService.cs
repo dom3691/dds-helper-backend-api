@@ -27,7 +27,7 @@ public class TripMaintenanceService : ITripMaintenanceService
         var atcResponse = new atc_datax();
         decimal.TryParse(request?.atc, out var atcEntered);
 
-        var tradeDetails = await _context.Trades.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
+        var tradeDetails = await _context.Trade.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
         var atcDetails = await _context.atcs.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc, cancellationToken);
         var transDataDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.sync_status != true, cancellationToken);
         var weighedOut = await _context.transaction_data.FirstOrDefaultAsync(a => a.sales_doc_number == request.atc && a.gross_time != null, cancellationToken);
@@ -87,7 +87,7 @@ public class TripMaintenanceService : ITripMaintenanceService
         var transactionResponse = new transaction_dto();
         decimal.TryParse(request?.atc, out var atcEntered);
 
-        var tradeDetails = await _context.Trades.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
+        var tradeDetails = await _context.Trade.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
         var transDataDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.gross_time == null, cancellationToken);
 
         try

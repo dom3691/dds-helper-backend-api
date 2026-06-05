@@ -16,7 +16,7 @@ public interface IDispatchDBContext
     DbSet<sto_data> sto_data { get; set; }
     DbSet<sto_transaction_data> sto_transaction_data { get; set; }
     DbSet<system_setting> system_setting { get; set; }
-    DbSet<Trade> Trades { get; set; }
+    DbSet<Trade> Trade { get; set; }
     DbSet<transaction_data> transaction_data { get; set; }
     DbSet<transaction_data_archive> transaction_data_archive { get; set; }
     DbSet<transaction_log> transaction_log { get; set; }

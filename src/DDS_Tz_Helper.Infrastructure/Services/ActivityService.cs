@@ -17,26 +17,30 @@ public class ActivityService : IActivityService
     {
         var take = Math.Clamp(count, 1, 50);
 
-        return await _context.transaction_log
+        var logs = await _context.transaction_log
             .OrderByDescending(x => x.trx_date)
             .ThenByDescending(x => x.Id)
             .Take(take)
-            .GroupJoin(
-                _context.user,
-                log => log.user_id,
-                user => user.Id,
-                (log, users) => new { log, users })
-            .SelectMany(
-                item => item.users.DefaultIfEmpty(),
-                (item, user) => new RecentActivityDto
-                {
-                    time = item.log.trx_date,
-                    activity = item.log.activity,
-                    reference = item.log.atc,
-                    plant = string.Empty,
-                    user = user != null ? user.username : item.log.user_id.ToString(),
-                    status = "Logged"
-                })
             .ToListAsync(cancellationToken);
+
+        var userIds = logs
+            .Where(x => x.user_id.HasValue)
+            .Select(x => x.user_id!.Value)
+            .Distinct()
+            .ToList();
+
+        var users = await _context.user
+            .Where(x => userIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.username, cancellationToken);
+
+        return logs.Select(log => new RecentActivityDto
+        {
+            time = log.trx_date,
+            activity = log.activity,
+            reference = log.atc,
+            plant = string.Empty,
+            user = log.user_id.HasValue && users.TryGetValue(log.user_id.Value, out var username) ? username : log.user_id?.ToString(),
+            status = "Logged"
+        }).ToList();
     }
 }

@@ -93,7 +93,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
     public virtual DbSet<sugar_trx> sugar_trx { get; set; }
     public virtual DbSet<system_setting> system_setting { get; set; }
     public virtual DbSet<tracker> trackers { get; set; }
-    public virtual DbSet<Trade> Trades { get; set; }
+    public virtual DbSet<Trade> Trade { get; set; }
     public virtual DbSet<transaction_data> transaction_data { get; set; }
     public virtual DbSet<transaction_log> transaction_log { get; set; }
     public virtual DbSet<transport_clearance> transport_clearance { get; set; }
@@ -231,7 +231,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
             [typeof(sugar_trx)] = "sugar_trx",
             [typeof(system_setting)] = "system_setting",
             [typeof(tracker)] = "trackers",
-            [typeof(Trade)] = "Trades",
+            [typeof(Trade)] = "Trade",
             [typeof(transaction_data)] = "transaction_data",
             [typeof(transaction_log)] = "transaction_log",
             [typeof(transport_clearance)] = "transport_clearance",
@@ -284,7 +284,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
         foreach (var tableName in tableNames)
         {
             var clrType = tableName.Key;
-            var entityBuilder = modelBuilder.Entity(clrType).ToTable(tableName.Value);
+            var entityBuilder = modelBuilder.Entity(clrType).ToTable(tableName.Value, tableBuilder => tableBuilder.UseSqlOutputClause(false));
             foreach (var property in clrType.GetProperties().Where(p => !IsScalarProperty(p.PropertyType)))
             {
                 entityBuilder.Ignore(property.Name);

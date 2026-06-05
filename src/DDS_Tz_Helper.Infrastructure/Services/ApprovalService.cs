@@ -204,7 +204,7 @@ public class ApprovalService : IApprovalService
     private async Task<trip_registry_dto> ApproveDriverUpdateAsync(transaction_data_archive approval, CancellationToken cancellationToken)
     {
         decimal.TryParse(approval.sales_doc_number, out var atcEntered);
-        var tradeDetails = await _context.Trades.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
+        var tradeDetails = await _context.Trade.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
         var atcDetails = await _context.atcs.FirstOrDefaultAsync(x => x.sales_doc_number == approval.sales_doc_number, cancellationToken);
         var transDataDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == approval.sales_doc_number && x.sync_status != true, cancellationToken);
 
@@ -232,7 +232,7 @@ public class ApprovalService : IApprovalService
     private async Task<trip_registry_dto> ApproveDestinationUpdateAsync(transaction_data_archive approval, CancellationToken cancellationToken)
     {
         decimal.TryParse(approval.sales_doc_number, out var atcEntered);
-        var tradeDetails = await _context.Trades.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
+        var tradeDetails = await _context.Trade.FirstOrDefaultAsync(x => x.sparenum2 == atcEntered, cancellationToken);
         var transDataDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == approval.sales_doc_number && x.gross_time == null, cancellationToken);
 
         if (tradeDetails is not null)
