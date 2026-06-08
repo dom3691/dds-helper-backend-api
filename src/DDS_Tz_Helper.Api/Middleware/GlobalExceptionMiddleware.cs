@@ -6,13 +6,11 @@ namespace DDS_Tz_Helper.Api.Middleware;
 public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionMiddleware> _logger;
     private readonly IWebHostEnvironment _environment;
 
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger, IWebHostEnvironment environment)
+    public GlobalExceptionMiddleware(RequestDelegate next, IWebHostEnvironment environment)
     {
         _next = next;
-        _logger = logger;
         _environment = environment;
     }
 
@@ -32,8 +30,6 @@ public class GlobalExceptionMiddleware
     {
         var statusCode = GetStatusCode(exception);
         var title = GetTitle(statusCode);
-
-        _logger.LogError(exception, "Unhandled API exception while processing {Method} {Path}", context.Request.Method, context.Request.Path);
 
         context.Response.Clear();
         context.Response.StatusCode = statusCode;

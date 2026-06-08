@@ -3,7 +3,6 @@ using DDS_Tz_Helper.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Serilog.Context;
-using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 var corsPolicyName = "ConfiguredCorsPolicy";
@@ -71,24 +70,7 @@ app.Use(async (context, next) =>
         await next();
     }
 });
-app.UseSerilogRequestLogging(options =>
-{
-    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} -> {StatusCode} ({Elapsed:0.000} ms)";
-    options.GetLevel = (context, _, exception) =>
-    {
-        if (exception is not null || context.Response.StatusCode >= StatusCodes.Status500InternalServerError)
-        {
-            return LogEventLevel.Error;
-        }
-
-        if (context.Response.StatusCode >= StatusCodes.Status400BadRequest)
-        {
-            return LogEventLevel.Warning;
-        }
-
-        return LogEventLevel.Information;
-    };
-});
+app.UseMiddleware<ApiRequestResponseLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
