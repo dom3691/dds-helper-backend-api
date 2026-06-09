@@ -11,11 +11,16 @@ public class ApiRequestResponseLoggingMiddleware
 
     private readonly RequestDelegate _next;
     private readonly ILogger<ApiRequestResponseLoggingMiddleware> _logger;
+    private readonly bool _includeBodies;
 
-    public ApiRequestResponseLoggingMiddleware(RequestDelegate next, ILogger<ApiRequestResponseLoggingMiddleware> logger)
+    public ApiRequestResponseLoggingMiddleware(
+        RequestDelegate next,
+        ILogger<ApiRequestResponseLoggingMiddleware> logger,
+        IConfiguration configuration)
     {
         _next = next;
         _logger = logger;
+        _includeBodies = configuration.GetValue<bool>("ApiLogging:IncludeBodies");
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -27,47 +32,47 @@ public class ApiRequestResponseLoggingMiddleware
         }
 
         var stopwatch = Stopwatch.StartNew();
-        var requestBody = await ReadRequestBodyAsync(context.Request);
+        var requestBody = _includeBodies ? await ReadRequestBodyAsync(context.Request) : string.Empty;
         var originalBody = context.Response.Body;
 
         await using var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
         _logger.LogInformation(
-            "REQUEST {Method} {Path} Query={QueryString} Body={RequestBody}",
+            "REQUEST {Method} {Path} Query={QueryString} BodyLogging={BodyLogging}",
             context.Request.Method,
             context.Request.Path,
             context.Request.QueryString.Value,
-            requestBody);
+            GetBodyLoggingState(requestBody));
 
         try
         {
             await _next(context);
             stopwatch.Stop();
 
-            var responseText = await ReadResponseBodyAsync(context.Response);
+            var responseText = _includeBodies ? await ReadResponseBodyAsync(context.Response) : string.Empty;
             context.Response.Body = originalBody;
             await responseBody.CopyToAsync(originalBody);
 
             if (context.Response.StatusCode >= StatusCodes.Status400BadRequest)
             {
                 _logger.LogError(
-                    "FAILURE {Method} {Path} StatusCode={StatusCode} ElapsedMs={ElapsedMs} Response={ResponseBody}",
+                    "FAILURE {Method} {Path} StatusCode={StatusCode} ElapsedMs={ElapsedMs} BodyLogging={BodyLogging}",
                     context.Request.Method,
                     context.Request.Path,
                     context.Response.StatusCode,
                     stopwatch.ElapsedMilliseconds,
-                    responseText);
+                    GetBodyLoggingState(responseText));
                 return;
             }
 
             _logger.LogInformation(
-                "RESPONSE {Method} {Path} StatusCode={StatusCode} ElapsedMs={ElapsedMs} Body={ResponseBody}",
+                "RESPONSE {Method} {Path} StatusCode={StatusCode} ElapsedMs={ElapsedMs} BodyLogging={BodyLogging}",
                 context.Request.Method,
                 context.Request.Path,
                 context.Response.StatusCode,
                 stopwatch.ElapsedMilliseconds,
-                responseText);
+                GetBodyLoggingState(responseText));
         }
         finally
         {
@@ -78,6 +83,16 @@ public class ApiRequestResponseLoggingMiddleware
     private static bool ShouldLog(HttpRequest request)
     {
         return request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetBodyLoggingState(string body)
+    {
+        if (!_includeBodies)
+        {
+            return "Disabled";
+        }
+
+        return string.IsNullOrWhiteSpace(body) ? "Empty" : body;
     }
 
     private static async Task<string> ReadRequestBodyAsync(HttpRequest request)

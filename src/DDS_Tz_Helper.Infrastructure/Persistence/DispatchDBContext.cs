@@ -145,6 +145,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DispatchDBContext).Assembly);
 
         var tableNames = new Dictionary<Type, string>
         {
@@ -284,6 +285,11 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
         foreach (var tableName in tableNames)
         {
             var clrType = tableName.Key;
+            if (CoreConfiguredTypes.Contains(clrType))
+            {
+                continue;
+            }
+
             var entityBuilder = modelBuilder.Entity(clrType).ToTable(tableName.Value, tableBuilder => tableBuilder.UseSqlOutputClause(false));
             foreach (var property in clrType.GetProperties().Where(p => !IsScalarProperty(p.PropertyType)))
             {
@@ -330,5 +336,25 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
         type = Nullable.GetUnderlyingType(type) ?? type;
         return type == typeof(decimal);
     }
+
+    private static readonly HashSet<Type> CoreConfiguredTypes =
+    [
+        typeof(atc),
+        typeof(atc_data),
+        typeof(atc_session),
+        typeof(change_request),
+        typeof(driver),
+        typeof(gateaccess_info),
+        typeof(sto_data),
+        typeof(sto_transaction_data),
+        typeof(system_setting),
+        typeof(Trade),
+        typeof(transaction_data),
+        typeof(transaction_data_archive),
+        typeof(transaction_log),
+        typeof(trip_registry),
+        typeof(user),
+        typeof(weight_change)
+    ];
 }
 
