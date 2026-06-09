@@ -157,7 +157,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
             [typeof(AspNetUserClaim)] = "AspNetUserClaims",
             [typeof(AspNetUserLogin)] = "AspNetUserLogins",
             [typeof(AspNetUser)] = "AspNetUsers",
-            [typeof(atc)] = "atcs",
+            [typeof(atc)] = "atc",
             [typeof(atc_card)] = "atc_card",
             [typeof(atc_correction)] = "atc_correction",
             [typeof(atc_data)] = "atc_data",

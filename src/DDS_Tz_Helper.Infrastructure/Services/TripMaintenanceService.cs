@@ -170,6 +170,21 @@ public class TripMaintenanceService : ITripMaintenanceService
     public async Task<trip_registry_dto> AddOnlineTripAsync(AddOnlineTripRequest request, CancellationToken cancellationToken = default)
     {
         var response = new trip_registry_dto();
+
+        if (request is null || string.IsNullOrWhiteSpace(request.atc) || string.IsNullOrWhiteSpace(request.trip))
+        {
+            response.msg = "ATC number and Online Trip ID are required.";
+            response.status = false;
+            return response;
+        }
+
+        if (!Regex.IsMatch(request.trip.Trim(), @"^\d{1,10}$"))
+        {
+            response.msg = "Online Trip ID must contain only numbers and must not be more than 10 digits.";
+            response.status = false;
+            return response;
+        }
+
         var tripRegistryDetails = await _context.trip_registry
             .FirstOrDefaultAsync(x => x.tms_online_status == null && x.atc_no == request.atc, cancellationToken);
 
@@ -183,7 +198,7 @@ public class TripMaintenanceService : ITripMaintenanceService
             }
 
             var pending = ApprovalService.CreatePendingRequest(ApprovalService.AddOnlineTripRequest, request.atc, request.user_id);
-            pending.trip_id = request.trip;
+            pending.trip_id = request.trip.Trim();
 
             _context.transaction_data_archive.Add(pending);
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "UPDATE_ONLINE_TRIP_HELPER", "UPDATE_ONLINE_TRIP_HELPER: ", cancellationToken);
