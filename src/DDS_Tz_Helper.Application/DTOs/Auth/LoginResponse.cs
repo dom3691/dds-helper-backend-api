@@ -15,5 +15,7 @@ public class LoginResponse
     public string currentPlant { get; set; }
     public string company_name { get; set; }
     public string loginStatus { get; set; }
+    public string token { get; set; }
+    public DateTime? tokenExpiresAt { get; set; }
     public bool status { get; set; }
 }

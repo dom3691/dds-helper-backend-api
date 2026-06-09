@@ -31,67 +31,57 @@ public class ATCGradeService : IATCGradeService
     {
         var response = new atc_datax();
 
-        try
+        if (request is null)
         {
-            if (request is null)
-            {
-                response.msg = "Invalid ATC grade change request";
-                response.status = false;
-                return response;
-            }
-
-            var selectedGrade = request.grade?.Trim();
-            if (string.IsNullOrWhiteSpace(request.atc) || string.IsNullOrWhiteSpace(selectedGrade))
-            {
-                response.msg = "ATC and grade are required.";
-                response.status = false;
-                return response;
-            }
-
-            if (!AllowedGrades.Contains(selectedGrade))
-            {
-                response.msg = "Invalid ATC grade selected. Please select one of the approved grades.";
-                response.status = false;
-                return response;
-            }
-
-            var atcDetails = await _context.atc_data
-                .FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.item_number != null, cancellationToken);
-
-            var transDataDetails = await _context.transaction_data
-                .FirstOrDefaultAsync(a => a.sales_doc_number == request.atc && a.gross_time != null, cancellationToken);
-
-            if (transDataDetails != null)
-            {
-                response.msg = "ATC has been USED and WEIGHED-OUT!!!";
-                response.status = false;
-                return response;
-            }
-
-            if (atcDetails == null)
-            {
-                response.msg = "Wrong ATC Entered";
-                response.status = false;
-                return response;
-            }
-
-            var pending = ApprovalService.CreatePendingRequest(ApprovalService.ChangeGradeRequest, request.atc, request.user_id);
-            pending.sales_order_item = selectedGrade;
-
-            _context.transaction_data_archive.Add(pending);
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, GradeChangeActivity, "ATC_GRADE_CHANGE : ", cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            response.msg = "ATC grade change request submitted successfully; approval is pending.";
-            response.status = true;
-            return response;
-        }
-        catch (Exception ex)
-        {
-            response.msg = "Error occured somewhere";
+            response.msg = "Invalid ATC grade change request";
             response.status = false;
-            response.excptn = ex.ToString();
             return response;
         }
+
+        var selectedGrade = request.grade?.Trim();
+        if (string.IsNullOrWhiteSpace(request.atc) || string.IsNullOrWhiteSpace(selectedGrade))
+        {
+            response.msg = "ATC and grade are required.";
+            response.status = false;
+            return response;
+        }
+
+        if (!AllowedGrades.Contains(selectedGrade))
+        {
+            response.msg = "Invalid ATC grade selected. Please select one of the approved grades.";
+            response.status = false;
+            return response;
+        }
+
+        var atcDetails = await _context.atc_data
+            .FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.item_number != null, cancellationToken);
+
+        var transDataDetails = await _context.transaction_data
+            .FirstOrDefaultAsync(a => a.sales_doc_number == request.atc && a.gross_time != null, cancellationToken);
+
+        if (transDataDetails != null)
+        {
+            response.msg = "ATC has been USED and WEIGHED-OUT!!!";
+            response.status = false;
+            return response;
+        }
+
+        if (atcDetails == null)
+        {
+            response.msg = "Wrong ATC Entered";
+            response.status = false;
+            return response;
+        }
+
+        var pending = ApprovalService.CreatePendingRequest(ApprovalService.ChangeGradeRequest, request.atc, request.user_id);
+        pending.sales_order_item = selectedGrade;
+
+        _context.transaction_data_archive.Add(pending);
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, GradeChangeActivity, "ATC_GRADE_CHANGE : ", cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        response.msg = "ATC grade change request submitted successfully; approval is pending.";
+        response.status = true;
+        return response;
     }
 }

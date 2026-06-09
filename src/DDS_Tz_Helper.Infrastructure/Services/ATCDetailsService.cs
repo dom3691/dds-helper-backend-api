@@ -21,87 +21,63 @@ public class ATCDetailsService : IATCDetailsService
     {
         var response = new sto_datax();
 
-        try
-        {
-            var poDetails = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.sync_status == false, cancellationToken);
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
+        var poDetails = await _context.sto_transaction_data.FirstOrDefaultAsync(x => x.po_doc_number == request.atc && x.sync_status == false, cancellationToken);
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
 
-            if (poDetails == null)
-            {
-                response.status = false;
-                response.msg = "Wrong PO or PO already weighed-out and Pushed to SAP";
-                await _context.SaveChangesAsync(cancellationToken);
-                return response;
-            }
-
-            response.msg = "";
-            response.status = true;
-            response.transporter = poDetails.transporter_name;
-            response.trip_id = poDetails.trip_id;
-            response.destination = poDetails.destination;
-            response.driverName = poDetails.driver;
-            response.sender = poDetails.sender;
-            response.stoLoc = poDetails.loc;
-            response.truckNumber = poDetails.vehicle;
-            response.receiver = poDetails.receiver;
-            response.atc = request.atc;
-            await _context.SaveChangesAsync(cancellationToken);
-            return response;
-        }
-        catch (Exception ex)
+        if (poDetails == null)
         {
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT : ", cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-            response.msg = "Error occured somewhere";
             response.status = false;
-            response.excptn = ex.ToString();
+            response.msg = "Wrong PO or PO already weighed-out and Pushed to SAP";
+            await _context.SaveChangesAsync(cancellationToken);
             return response;
         }
+
+        response.msg = "";
+        response.status = true;
+        response.transporter = poDetails.transporter_name;
+        response.trip_id = poDetails.trip_id;
+        response.destination = poDetails.destination;
+        response.driverName = poDetails.driver;
+        response.sender = poDetails.sender;
+        response.stoLoc = poDetails.loc;
+        response.truckNumber = poDetails.vehicle;
+        response.receiver = poDetails.receiver;
+        response.atc = request.atc;
+        await _context.SaveChangesAsync(cancellationToken);
+        return response;
     }
 
     public async Task<Gate_Datax> DoFetchATCDetailsGateAsync(FetchATCDetailsRequest request, CancellationToken cancellationToken = default)
     {
         var response = new Gate_Datax();
 
-        try
-        {
-            var atcDetails = await _context.gateaccess_info.FirstOrDefaultAsync(x => x.atc_no == request.atc && x.status != "Weigh-Out Successful." && x.status != "CANCELLED", cancellationToken);
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE : ", cancellationToken);
+        var atcDetails = await _context.gateaccess_info.FirstOrDefaultAsync(x => x.atc_no == request.atc && x.status != "Weigh-Out Successful." && x.status != "CANCELLED", cancellationToken);
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE : ", cancellationToken);
 
-            if (atcDetails == null)
-            {
-                response.status = false;
-                response.msg = "Wrong ATC or ATC already weighed-out";
-                await _context.SaveChangesAsync(cancellationToken);
-                return response;
-            }
-
-            response.msg = "";
-            response.status = true;
-            response.transporter = atcDetails.transporter;
-            response.statusDB = atcDetails.status;
-            response.destination = atcDetails.destination;
-            response.driverName = atcDetails.driver;
-            response.transType = atcDetails.transaction_type;
-            response.ShippingPoint = atcDetails.shipping_point;
-            response.License = atcDetails.license;
-            response.customer = atcDetails.customer;
-            response.truckNumber = atcDetails.truck_no;
-            response.product = atcDetails.fleet_no;
-            response.parentSO = atcDetails.parent_so;
-            response.atc = request.atc;
-            await _context.SaveChangesAsync(cancellationToken);
-            return response;
-        }
-        catch (Exception ex)
+        if (atcDetails == null)
         {
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_HELPER", "FETCH_ATC_ATTEMPT GATE: ", cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-            response.msg = "Error occured somewhere";
             response.status = false;
-            response.excptn = ex.ToString();
+            response.msg = "Wrong ATC or ATC already weighed-out";
+            await _context.SaveChangesAsync(cancellationToken);
             return response;
         }
+
+        response.msg = "";
+        response.status = true;
+        response.transporter = atcDetails.transporter;
+        response.statusDB = atcDetails.status;
+        response.destination = atcDetails.destination;
+        response.driverName = atcDetails.driver;
+        response.transType = atcDetails.transaction_type;
+        response.ShippingPoint = atcDetails.shipping_point;
+        response.License = atcDetails.license;
+        response.customer = atcDetails.customer;
+        response.truckNumber = atcDetails.truck_no;
+        response.product = atcDetails.fleet_no;
+        response.parentSO = atcDetails.parent_so;
+        response.atc = request.atc;
+        await _context.SaveChangesAsync(cancellationToken);
+        return response;
     }
 
     public async Task<object> DoFetchATcForArchiveDetailsAsync(FetchATCDetailsRequest request, CancellationToken cancellationToken = default)
@@ -263,73 +239,61 @@ public class ATCDetailsService : IATCDetailsService
             return response;
         }
 
-        try
-        {
-            var transDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.sync_status == false && x.operator_picking != null && x.gross == null, cancellationToken);
-            if (transDetails == null)
-            {
-                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR GROSS_CHANGE : ", cancellationToken);
-                await _context.SaveChangesAsync(cancellationToken);
-                response.status = false;
-                response.msg = "Wrong ATC Or ATC Is Weighed Out Or ATC Is Pushed To SAP Already";
-                return response;
-            }
-
-            var weightChange = await _context.weight_change.FirstOrDefaultAsync(x => x.atc_no == request.atc && x.change_request_id != null && x.status == "APPROVED" && x.net_weight != null && (x.weight_change1 == "-150" || x.weight_change1 == "150"), cancellationToken);
-            if (weightChange == null)
-            {
-                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
-                await _context.SaveChangesAsync(cancellationToken);
-                response.status = false;
-                response.msg = "MAXIMUM Gross Weight Change Needs To Be Requested And Approved From DDS First";
-                return response;
-            }
-
-            var changeRequest = await _context.change_request.FirstOrDefaultAsync(x => x.id == weightChange.change_request_id && x.request_type == "GROSS_WEIGHT_CHANGE" && x.date_of_approval != null && x.approved == true, cancellationToken);
-            if (changeRequest == null)
-            {
-                await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
-                await _context.SaveChangesAsync(cancellationToken);
-                response.msg = "Please Ensure Initial DDS Approval Request Was Granted";
-                response.status = false;
-                return response;
-            }
-
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            response.msg = "";
-            response.status = true;
-            response.grade = weightChange.weight_change1;
-            response.stoLoc = weightChange.status;
-            response.sender = weightChange.net_weight;
-            response.driverName = weightChange.tare_weight;
-            response.destination = weightChange.gross_weight;
-            response.receiver = changeRequest.notes;
-            response.requestedBy = changeRequest.requested_by;
-            response.approvedBy = changeRequest.approved_by;
-            response.requestType = changeRequest.request_type;
-            response.dateOfApproval = changeRequest.date_of_approval ?? DateTime.MinValue;
-            response.dateOfRequest = changeRequest.date_of_request ?? DateTime.MinValue;
-            response.Quantity = transDetails.quantity ?? 0;
-            response.truckNumber = transDetails.vehicle;
-            response.TruckDriverName = transDetails.driver;
-            response.Migo_Details = "CEMENT";
-            response.truckDestination = transDetails.destination;
-            response.operatorWeighin = transDetails.operator_weighin;
-            response.operatorPicking = transDetails.operator_picking;
-            response.atc = request.atc;
-            return response;
-        }
-        catch (Exception ex)
+        var transDetails = await _context.transaction_data.FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.sync_status == false && x.operator_picking != null && x.gross == null, cancellationToken);
+        if (transDetails == null)
         {
             await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER", "FETCH_ATC_ATTEMPT_FOR_GROSS_CHANGE_HELPER : ", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
-            response.msg = "Error (an exception) occured somewhere";
             response.status = false;
-            response.excptn = ex.ToString();
+            response.msg = "Wrong ATC Or ATC Is Weighed Out Or ATC Is Pushed To SAP Already";
             return response;
         }
+
+        var weightChange = await _context.weight_change.FirstOrDefaultAsync(x => x.atc_no == request.atc && x.change_request_id != null && x.status == "APPROVED" && x.net_weight != null && (x.weight_change1 == "-150" || x.weight_change1 == "150"), cancellationToken);
+        if (weightChange == null)
+        {
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            response.status = false;
+            response.msg = "MAXIMUM Gross Weight Change Needs To Be Requested And Approved From DDS First";
+            return response;
+        }
+
+        var changeRequest = await _context.change_request.FirstOrDefaultAsync(x => x.id == weightChange.change_request_id && x.request_type == "GROSS_WEIGHT_CHANGE" && x.date_of_approval != null && x.approved == true, cancellationToken);
+        if (changeRequest == null)
+        {
+            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            response.msg = "Please Ensure Initial DDS Approval Request Was Granted";
+            response.status = false;
+            return response;
+        }
+
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE", "CHECK_FOR_DDS_APPROVAL_MAX_GROSS_WT_CHANGE : ", cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        response.msg = "";
+        response.status = true;
+        response.grade = weightChange.weight_change1;
+        response.stoLoc = weightChange.status;
+        response.sender = weightChange.net_weight;
+        response.driverName = weightChange.tare_weight;
+        response.destination = weightChange.gross_weight;
+        response.receiver = changeRequest.notes;
+        response.requestedBy = changeRequest.requested_by;
+        response.approvedBy = changeRequest.approved_by;
+        response.requestType = changeRequest.request_type;
+        response.dateOfApproval = changeRequest.date_of_approval ?? DateTime.MinValue;
+        response.dateOfRequest = changeRequest.date_of_request ?? DateTime.MinValue;
+        response.Quantity = transDetails.quantity ?? 0;
+        response.truckNumber = transDetails.vehicle;
+        response.TruckDriverName = transDetails.driver;
+        response.Migo_Details = "CEMENT";
+        response.truckDestination = transDetails.destination;
+        response.operatorWeighin = transDetails.operator_weighin;
+        response.operatorPicking = transDetails.operator_picking;
+        response.atc = request.atc;
+        return response;
     }
 
 }

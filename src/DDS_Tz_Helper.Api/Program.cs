@@ -1,16 +1,27 @@
 using DDS_Tz_Helper.Api.Middleware;
 using DDS_Tz_Helper.Infrastructure.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Context;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 var corsPolicyName = "ConfiguredCorsPolicy";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 var allowCredentials = builder.Configuration.GetValue<bool>("Cors:AllowCredentials");
 var logDirectory = builder.Configuration.GetValue<string>("Serilog:LogDirectory") ?? @"C:\DDS_Logs";
+var jwtKey = builder.Configuration["Jwt:Key"] ?? string.Empty;
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "DDS_Tz_Helper";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "DDS_Tz_Helper.Web";
 
 Directory.CreateDirectory(logDirectory);
+
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+{
+    throw new InvalidOperationException("Jwt:Key must be configured and must be at least 32 characters long.");
+}
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
@@ -39,8 +50,52 @@ builder.Services.AddControllers()
         };
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter a valid JWT bearer token."
+    });
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.FromMinutes(2)
+        };
+    });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CheckerOnly", policy => policy.RequireClaim("CanApprove", "true"));
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(corsPolicyName, policy =>
@@ -81,6 +136,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors(corsPolicyName);
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

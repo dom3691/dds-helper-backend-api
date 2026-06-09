@@ -22,71 +22,62 @@ public class ReceiverService : IReceiverService
     {
         var response = new atc_datax();
 
-        try
+        if (request is null)
         {
-            if (request is null)
-            {
-                response.msg = "Invalid receiver update request";
-                response.status = false;
-                return response;
-            }
-
-            var weighedOutTransaction = await _context.transaction_data
-                .FirstOrDefaultAsync(a => a.sales_doc_number == request.atc && a.gross_time != null, cancellationToken);
-
-            if (weighedOutTransaction != null)
-            {
-                response.msg = "ATC has been USED and WEIGHED-OUT!!!";
-                response.status = false;
-                return response;
-            }
-
-            var atcExists = await _context.atc_data
-                .AnyAsync(x => x.sales_doc_number == request.atc, cancellationToken);
-
-            if (!atcExists)
-            {
-                response.msg = "invalid ATC entered";
-                response.status = false;
-                return response;
-            }
-
-            var unusedAtcExists = await _context.atc_data
-                .AnyAsync(x => x.sales_doc_number == request.atc && x.used == null, cancellationToken);
-
-            if (!unusedAtcExists)
-            {
-                response.msg = "ATC is already used";
-                response.status = false;
-                return response;
-            }
-
-            var atcDetails = await _context.atc_data
-                .FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.customer_name == "" && x.used == null, cancellationToken);
-
-            if (atcDetails is null)
-            {
-                response.msg = "Invalid ATC or Customer Already Exists!";
-                response.status = false;
-                return response;
-            }
-
-            var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateReceiverRequest, request.atc, request.user_id);
-            pending.sender = request.receiver;
-
-            _context.transaction_data_archive.Add(pending);
-            await _transactionLogService.RecordLogAsync(request.atc, request.user_id, UpdateReceiverActivity, "UPDATE_RECEIVER_HELPER: ", cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            response.msg = "Receiver/customer update request submitted successfully; approval is pending.";
-            response.status = true;
-            return response;
-        }
-        catch
-        {
-            response.msg = "Error occured somewhere. cal on I.T";
+            response.msg = "Invalid receiver update request";
             response.status = false;
             return response;
         }
+
+        var weighedOutTransaction = await _context.transaction_data
+            .FirstOrDefaultAsync(a => a.sales_doc_number == request.atc && a.gross_time != null, cancellationToken);
+
+        if (weighedOutTransaction != null)
+        {
+            response.msg = "ATC has been USED and WEIGHED-OUT!!!";
+            response.status = false;
+            return response;
+        }
+
+        var atcExists = await _context.atc_data
+            .AnyAsync(x => x.sales_doc_number == request.atc, cancellationToken);
+
+        if (!atcExists)
+        {
+            response.msg = "invalid ATC entered";
+            response.status = false;
+            return response;
+        }
+
+        var unusedAtcExists = await _context.atc_data
+            .AnyAsync(x => x.sales_doc_number == request.atc && x.used == null, cancellationToken);
+
+        if (!unusedAtcExists)
+        {
+            response.msg = "ATC is already used";
+            response.status = false;
+            return response;
+        }
+
+        var atcDetails = await _context.atc_data
+            .FirstOrDefaultAsync(x => x.sales_doc_number == request.atc && x.customer_name == "" && x.used == null, cancellationToken);
+
+        if (atcDetails is null)
+        {
+            response.msg = "Invalid ATC or Customer Already Exists!";
+            response.status = false;
+            return response;
+        }
+
+        var pending = ApprovalService.CreatePendingRequest(ApprovalService.UpdateReceiverRequest, request.atc, request.user_id);
+        pending.sender = request.receiver;
+
+        _context.transaction_data_archive.Add(pending);
+        await _transactionLogService.RecordLogAsync(request.atc, request.user_id, UpdateReceiverActivity, "UPDATE_RECEIVER_HELPER: ", cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        response.msg = "Receiver/customer update request submitted successfully; approval is pending.";
+        response.status = true;
+        return response;
     }
 }

@@ -88,6 +88,11 @@ public class ApprovalService : IApprovalService
             return Failure(response, "This request is no longer pending.");
         }
 
+        if (approval.shp_point == request.user_id.ToString())
+        {
+            return Failure(response, "You cannot approve a request you created.");
+        }
+
         var applyResponse = await ApplyApprovedChangeAsync(approval, request.user_id, cancellationToken);
         if (!applyResponse.status)
         {
@@ -127,6 +132,11 @@ public class ApprovalService : IApprovalService
         if (approval is null)
         {
             return Failure(response, "This request is no longer pending.");
+        }
+
+        if (approval.shp_point == request.user_id.ToString())
+        {
+            return Failure(response, "You cannot decline a request you created.");
         }
 
         approval.operator_picking = request.comment;

@@ -290,6 +290,11 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
                 entityBuilder.Ignore(property.Name);
             }
 
+            foreach (var property in clrType.GetProperties().Where(p => IsDecimalProperty(p.PropertyType)))
+            {
+                entityBuilder.Property(property.Name).HasPrecision(38, 6);
+            }
+
             var keyProperty = clrType.GetProperties()
                 .Where(p => IsScalarProperty(p.PropertyType))
                 .FirstOrDefault(p => p.Name == "Id" || p.Name == "id" || p.Name == clrType.Name + "Id" || p.Name == clrType.Name + "ID");
@@ -318,6 +323,12 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
             || type == typeof(TimeSpan)
             || type == typeof(Guid)
             || type == typeof(byte[]);
+    }
+
+    private static bool IsDecimalProperty(Type type)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        return type == typeof(decimal);
     }
 }
 

@@ -1,9 +1,12 @@
 using DDS_Tz_Helper.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace DDS_Tz_Helper.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ActivityController : ControllerBase
 {
