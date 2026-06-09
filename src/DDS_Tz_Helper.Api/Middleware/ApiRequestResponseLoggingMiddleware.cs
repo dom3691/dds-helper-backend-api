@@ -51,6 +51,7 @@ public class ApiRequestResponseLoggingMiddleware
             stopwatch.Stop();
 
             var responseText = _includeBodies ? await ReadResponseBodyAsync(context.Response) : string.Empty;
+            responseBody.Seek(0, SeekOrigin.Begin);
             context.Response.Body = originalBody;
             await responseBody.CopyToAsync(originalBody);
 
