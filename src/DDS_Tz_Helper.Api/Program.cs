@@ -1,4 +1,5 @@
 using DDS_Tz_Helper.Api.Middleware;
+using DDS_Tz_Helper.Application.DependencyInjection;
 using DDS_Tz_Helper.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -76,6 +77,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

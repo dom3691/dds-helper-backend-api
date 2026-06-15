@@ -1,10 +1,10 @@
-﻿using DDS_Tz_Helper.Application.DTOs.ATCGrade;
+using DDS_Tz_Helper.Application.Common;
+using DDS_Tz_Helper.Application.DTOs.ATCGrade;
 using DDS_Tz_Helper.Application.DTOs.BusinessObjects;
 using DDS_Tz_Helper.Application.Interfaces;
-using DDS_Tz_Helper.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace DDS_Tz_Helper.Infrastructure.Services;
+namespace DDS_Tz_Helper.Application.Features.ATCGrade;
 
 public class ATCGradeService : IATCGradeService
 {
@@ -29,28 +29,20 @@ public class ATCGradeService : IATCGradeService
 
     public async Task<atc_datax> DoChangeATCGradeAsync(DoChangeATCGradeRequest request, CancellationToken cancellationToken = default)
     {
-        var response = new atc_datax();
-
         if (request is null)
         {
-            response.msg = "Invalid ATC grade change request";
-            response.status = false;
-            return response;
+            return Failure("Invalid ATC grade change request");
         }
 
         var selectedGrade = request.grade?.Trim();
         if (string.IsNullOrWhiteSpace(request.atc) || string.IsNullOrWhiteSpace(selectedGrade))
         {
-            response.msg = "ATC and grade are required.";
-            response.status = false;
-            return response;
+            return Failure("ATC and grade are required.");
         }
 
         if (!AllowedGrades.Contains(selectedGrade))
         {
-            response.msg = "Invalid ATC grade selected. Please select one of the approved grades.";
-            response.status = false;
-            return response;
+            return Failure("Invalid ATC grade selected. Please select one of the approved grades.");
         }
 
         var atcDetails = await _context.atc_data
@@ -59,29 +51,36 @@ public class ATCGradeService : IATCGradeService
         var transDataDetails = await _context.transaction_data
             .FirstOrDefaultAsync(a => a.sales_doc_number == request.atc && a.gross_time != null, cancellationToken);
 
-        if (transDataDetails != null)
+        if (transDataDetails is not null)
         {
-            response.msg = "ATC has been USED and WEIGHED-OUT!!!";
-            response.status = false;
-            return response;
+            return Failure("ATC has been USED and WEIGHED-OUT!!!");
         }
 
-        if (atcDetails == null)
+        if (atcDetails is null)
         {
-            response.msg = "Wrong ATC Entered";
-            response.status = false;
-            return response;
+            return Failure("Wrong ATC Entered");
         }
 
-        var pending = ApprovalService.CreatePendingRequest(ApprovalService.ChangeGradeRequest, request.atc, request.user_id);
+        var pending = ApprovalRequestTypes.CreatePendingRequest(ApprovalRequestTypes.ChangeGradeRequest, request.atc, request.user_id);
         pending.sales_order_item = selectedGrade;
 
         _context.transaction_data_archive.Add(pending);
         await _transactionLogService.RecordLogAsync(request.atc, request.user_id, GradeChangeActivity, "ATC_GRADE_CHANGE : ", cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        response.msg = "ATC grade change request submitted successfully; approval is pending.";
-        response.status = true;
-        return response;
+        return new atc_datax
+        {
+            msg = "ATC grade change request submitted successfully; approval is pending.",
+            status = true
+        };
+    }
+
+    private static atc_datax Failure(string message)
+    {
+        return new atc_datax
+        {
+            msg = message,
+            status = false
+        };
     }
 }

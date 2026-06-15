@@ -1,3 +1,4 @@
+using DDS_Tz_Helper.Application.Common;
 using DDS_Tz_Helper.Application.DTOs.Approvals;
 using DDS_Tz_Helper.Application.DTOs.BusinessObjects;
 using DDS_Tz_Helper.Application.Interfaces;
@@ -13,32 +14,17 @@ public class ApprovalService : IApprovalService
     public const string ApprovedStatus = "APPROVED";
     public const string RejectedStatus = "REJECTED";
 
-    public const string AtcSwapRequest = "ATC SWAP REQUEST";
-    public const string UpdateDriverRequest = "UPDATE DRIVER REQUEST";
-    public const string UpdateDestinationRequest = "UPDATE DESTINATION REQUEST";
-    public const string UpdateReceiverRequest = "UPDATE RECEIVER REQUEST";
-    public const string ChangeGradeRequest = "CHANGE ATC GRADE REQUEST";
-    public const string UpdateTripRequest = "UPDATE TRIP REQUEST";
-    public const string AddOnlineTripRequest = "ADD ONLINE TRIP REQUEST";
-    public const string RepushOfflineRequest = "REPUSH OFFLINE TRIP REQUEST";
-    public const string UpdateMolassesRequest = "UPDATE MOLASSES REQUEST";
-    public const string RemoveCtesTripRequest = "REMOVE CTES TRIP REQUEST";
-    public const string AddDriverManuallyRequest = "ADD DRIVER MANUALLY REQUEST";
-
-    private static readonly string[] SupportedRequestTypes =
-    [
-        AtcSwapRequest,
-        UpdateDriverRequest,
-        UpdateDestinationRequest,
-        UpdateReceiverRequest,
-        ChangeGradeRequest,
-        UpdateTripRequest,
-        AddOnlineTripRequest,
-        RepushOfflineRequest,
-        UpdateMolassesRequest,
-        RemoveCtesTripRequest,
-        AddDriverManuallyRequest
-    ];
+    public const string AtcSwapRequest = ApprovalRequestTypes.AtcSwapRequest;
+    public const string UpdateDriverRequest = ApprovalRequestTypes.UpdateDriverRequest;
+    public const string UpdateDestinationRequest = ApprovalRequestTypes.UpdateDestinationRequest;
+    public const string UpdateReceiverRequest = ApprovalRequestTypes.UpdateReceiverRequest;
+    public const string ChangeGradeRequest = ApprovalRequestTypes.ChangeGradeRequest;
+    public const string UpdateTripRequest = ApprovalRequestTypes.UpdateTripRequest;
+    public const string AddOnlineTripRequest = ApprovalRequestTypes.AddOnlineTripRequest;
+    public const string RepushOfflineRequest = ApprovalRequestTypes.RepushOfflineRequest;
+    public const string UpdateMolassesRequest = ApprovalRequestTypes.UpdateMolassesRequest;
+    public const string RemoveCtesTripRequest = ApprovalRequestTypes.RemoveCtesTripRequest;
+    public const string AddDriverManuallyRequest = ApprovalRequestTypes.AddDriverManuallyRequest;
 
     private readonly IDispatchDBContext _context;
     private readonly IConfiguration _configuration;
@@ -59,7 +45,7 @@ public class ApprovalService : IApprovalService
         }
 
         var pending = await _context.transaction_data_archive
-            .Where(x => x.sales_doc_type == PendingStatus && SupportedRequestTypes.Contains(x.operator_weighin))
+            .Where(x => x.sales_doc_type == PendingStatus && ApprovalRequestTypes.SupportedRequestTypes.Contains(x.operator_weighin))
             .OrderByDescending(x => x.tare_time ?? x.picking_time ?? x.gross_time)
             .ToListAsync(cancellationToken);
 
@@ -154,14 +140,7 @@ public class ApprovalService : IApprovalService
 
     public static transaction_data_archive CreatePendingRequest(string requestType, string atc, int userId)
     {
-        return new transaction_data_archive
-        {
-            sales_doc_number = atc,
-            shp_point = userId.ToString(),
-            operator_weighin = requestType,
-            sales_doc_type = PendingStatus,
-            tare_time = DateTime.Now
-        };
+        return ApprovalRequestTypes.CreatePendingRequest(requestType, atc, userId);
     }
 
     private async Task<trip_registry_dto> ApplyApprovedChangeAsync(transaction_data_archive approval, int approverId, CancellationToken cancellationToken)

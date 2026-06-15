@@ -19,8 +19,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITransactionLogService, TransactionLogService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IApprovalService, ApprovalService>();
-        services.AddScoped<IATCSwapService, ATCSwapService>();
-        services.AddScoped<IATCGradeService, ATCGradeService>();
         services.AddScoped<IReceiverService, ReceiverService>();
         services.AddScoped<ITripMaintenanceService, TripMaintenanceService>();
         services.AddScoped<IPostingErrorsService, PostingErrorsService>();
