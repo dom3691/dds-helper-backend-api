@@ -1,4 +1,5 @@
 using System.Reflection;
+using DDS_Tz_Helper.Application.DTOs.Results;
 using DDS_Tz_Helper.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -124,6 +125,19 @@ public class TransactionLogConfiguration : IEntityTypeConfiguration<transaction_
 public class TripRegistryConfiguration : IEntityTypeConfiguration<trip_registry>
 {
     public void Configure(EntityTypeBuilder<trip_registry> builder) => builder.ConfigureLegacyTable("trip_registry", nameof(trip_registry.Id));
+}
+
+public class TruckAnalysisMaterialOnlyResultConfiguration : IEntityTypeConfiguration<Truck_Analysis_Material_only_Result>
+{
+    public void Configure(EntityTypeBuilder<Truck_Analysis_Material_only_Result> builder)
+    {
+        builder.HasNoKey();
+        builder.ToView(null);
+        foreach (var property in typeof(Truck_Analysis_Material_only_Result).GetProperties().Where(p => (Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType) == typeof(decimal)))
+        {
+            builder.Property(property.Name).HasPrecision(38, 6);
+        }
+    }
 }
 
 public class UserConfiguration : IEntityTypeConfiguration<user>

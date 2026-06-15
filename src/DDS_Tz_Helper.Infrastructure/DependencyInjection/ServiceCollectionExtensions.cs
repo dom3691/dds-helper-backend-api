@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPostingErrorsService, PostingErrorsService>();
         services.AddScoped<IATCDetailsService, ATCDetailsService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IReportsService, ReportsService>();
 
         return services;
     }

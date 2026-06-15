@@ -1,4 +1,5 @@
 ﻿using DDS_Tz_Helper.Application.Interfaces;
+using DDS_Tz_Helper.Application.DTOs.Results;
 using DDS_Tz_Helper.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -141,6 +142,7 @@ public partial class DispatchDBContext : DbContext, IDispatchDBContext
     public virtual DbSet<sales_doc_type> sales_doc_type { get; set; }
     public virtual DbSet<trx_data_audit> trx_data_audit { get; set; }
     public virtual DbSet<transaction_data_archive> transaction_data_archive { get; set; }
+    public virtual DbSet<Truck_Analysis_Material_only_Result> Truck_Analysis_Material_only_Results { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

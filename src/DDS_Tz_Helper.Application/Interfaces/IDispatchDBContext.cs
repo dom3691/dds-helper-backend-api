@@ -1,4 +1,5 @@
-﻿using DDS_Tz_Helper.Domain.Entities;
+using DDS_Tz_Helper.Application.DTOs.Results;
+using DDS_Tz_Helper.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -20,9 +21,11 @@ public interface IDispatchDBContext
     DbSet<transaction_data> transaction_data { get; set; }
     DbSet<transaction_data_archive> transaction_data_archive { get; set; }
     DbSet<transaction_log> transaction_log { get; set; }
+    DbSet<trip_closure> trip_closure { get; set; }
     DbSet<trip_registry> trip_registry { get; set; }
     DbSet<user> user { get; set; }
     DbSet<weight_change> weight_change { get; set; }
+    DbSet<Truck_Analysis_Material_only_Result> Truck_Analysis_Material_only_Results { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     EntityEntry Entry(object entity);
